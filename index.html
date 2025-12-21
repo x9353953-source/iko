@@ -204,7 +204,7 @@
                 </div>
                 <div class="text-[11px] text-gray-400 leading-tight">
                     *导出的列数=您一开始在最上面填写的“列数（横向）”，适用于100张以上拼图或者后期分组导出。
-                   例: 填9张/组，可按你所填的列数9张/组一张张导出。建议合理填写，否则拼图可能会留空白
+                   例: 填9张/组，可按你所填的列数9张/组一张张导出。建议合理填写，否则拼图可能会留空白。
                 </div>
             </div>
 
@@ -555,7 +555,7 @@
             ctx.fillStyle = '#fff'; ctx.fillRect(0,0,baseW,baseH);
             modal.style.display = 'flex';
         }
-    }    function calculateBatchSize() {
+    }        function calculateBatchSize() {
         const exCols = parseInt(document.getElementById('exportCols').value);
         const exRows = parseInt(document.getElementById('exportRows').value);
         const batchInput = document.getElementById('imagesPerBatch');
@@ -595,7 +595,41 @@
         
         const startNum = parseInt(document.getElementById('startNumber').value) || 1;
         let targets = [...imagesData];
-        const maskTargets = document.getElementById('maskIndices').value.split(/[,， ]+/).map(s=>parseInt(s)).filter(n=>!isNaN(n));
+
+        // --- 核心修复：支持 "1-5" 这种区间写法 ---
+        const rawInput = document.getElementById('maskIndices').value;
+        let maskTargets = [];
+        // 1. 先按逗号、中文逗号或空格分割成片段
+        const parts = rawInput.split(/[,，\s]+/);
+        
+        parts.forEach(part => {
+            part = part.trim();
+            if (!part) return;
+            
+            if (part.includes('-')) {
+                // 2. 如果片段里包含横杠 (例如 "1-5")
+                const rangeParts = part.split('-');
+                if (rangeParts.length === 2) {
+                    const start = parseInt(rangeParts[0]);
+                    const end = parseInt(rangeParts[1]);
+                    // 确保是有效数字，循环添加中间的所有数字
+                    if (!isNaN(start) && !isNaN(end)) {
+                        const min = Math.min(start, end);
+                        const max = Math.max(start, end);
+                        for (let k = min; k <= max; k++) {
+                            maskTargets.push(k);
+                        }
+                    }
+                }
+            } else {
+                // 3. 普通单数字 (例如 "8")
+                const num = parseInt(part);
+                if (!isNaN(num)) {
+                    maskTargets.push(num);
+                }
+            }
+        });
+        // -------------------------------------------
         
         if (opType === 'repack') targets = targets.filter((_, i) => !maskTargets.includes(startNum + i));
 
@@ -614,7 +648,6 @@
         showLoading(true, '初始化...');
         try {
             for (let b = 0; b < totalBatches; b++) {
-                // 中断检测点
                 if (isCancelled) { console.log('任务已取消'); break; }
 
                 showLoading(true, `生成第 ${b+1} / ${totalBatches} 组...`);
@@ -651,6 +684,7 @@
         } catch(e) { console.error(e); if(!isCancelled) alert('错误:'+e.message); }
         showLoading(false);
     }
+
     async function drawAsync(ctx, imgs, rows, cols, w, h, gap, globalOffset, startNum, maskIndices, applyMask) {
         if (isCancelled) return;
 
