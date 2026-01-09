@@ -1,0 +1,15 @@
+{
+    "name": "拼图Ultimate",
+    "short_name": "拼图Pro",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#F2F2F7",
+    "theme_color": "#F2F2F7",
+    "icons": [
+        {
+            "src": "https://files.catbox.moe/a8cjhe.jpg",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
